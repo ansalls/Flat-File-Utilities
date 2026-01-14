@@ -193,7 +193,7 @@
         <input id="delimiter" type="text" value="|" maxlength="10" />
 
         <label for="col">Column (1-based)</label>
-        <input id="col" type="number" min="1" value="5" />
+        <input id="col" type="number" min="1" value="11" />
 
         <label for="text">Text to append</label>
         <textarea id="text">^^External Morality Item Update</textarea>
@@ -224,13 +224,13 @@
       <details>
         <summary>Example</summary>
         <pre>Input:
-tony|salls|17.10.1980|123 123 4567|12.12.2025|456123789
+Jack|Frost||17.10.1980|M|||||123 123 4567|12.12.2025|456123789
 
-Append to column 5:
+Append to column 11:
 ^^External Morality Item Update
 
 Output:
-tony|salls|17.10.1980|123 123 4567|12.12.2025^^External Morality Item Update|456123789</pre>
+Jack|Frost||17.10.1980|M|||||123 123 4567|12.12.2025^^External Morality Item Update|456123789</pre>
       </details>
     </div>
   </div>
@@ -460,7 +460,7 @@ tony|salls|17.10.1980|123 123 4567|12.12.2025^^External Morality Item Update|456
       hadTrailingNewline = false;
 
       delimiterEl.value = "|";
-      colEl.value = "5";
+      colEl.value = "11";
       textEl.value = "^^External Morality Item Update";
       missingColsEl.value = "skip";
 
