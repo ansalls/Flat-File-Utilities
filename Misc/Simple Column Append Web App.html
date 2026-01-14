@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Append Text to Column in Delimited File</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; line-height: 1.35; }
+    h1 { margin: 0 0 12px; font-size: 20px; }
+    .card { max-width: 900px; padding: 16px; border: 1px solid rgba(127,127,127,.35); border-radius: 12px; }
+    .row { display: grid; grid-template-columns: 220px 1fr; gap: 10px 14px; align-items: center; margin: 10px 0; }
+    label { font-weight: 600; }
+    input[type="text"], input[type="number"], textarea, select {
+      width: 100%; padding: 10px; border-radius: 10px;
+      border: 1px solid rgba(127,127,127,.45);
+      background: transparent;
+    }
+    textarea { min-height: 72px; resize: vertical; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    button {
+      padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(127,127,127,.45);
+      background: rgba(127,127,127,.12); cursor: pointer; font-weight: 650;
+    }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .small { font-size: 12px; opacity: .8; }
+    pre { white-space: pre-wrap; word-break: break-word; background: rgba(127,127,127,.08); padding: 10px; border-radius: 10px; }
+    .ok { color: #1a7f37; }
+    .warn { color: #b08900; }
+    .err { color: #c83c3c; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Append text to a column in a delimited file</h1>
+    <div class="small">
+      Works entirely in your browser. No uploads, no dependencies.
+    </div>
+
+    <div class="row" style="margin-top:14px;">
+      <label for="file">Input file</label>
+      <input id="file" type="file" />
+    </div>
+
+    <div class="row">
+      <label for="delimiter">Field delimiter</label>
+      <input id="delimiter" type="text" value="|" maxlength="10" />
+    </div>
+
+    <div class="row">
+      <label for="col">Column (1-based)</label>
+      <input id="col" type="number" min="1" value="5" />
+    </div>
+
+    <div class="row">
+      <label for="appendDelim">Append delimiter</label>
+      <input id="appendDelim" type="text" value="^^" maxlength="20" />
+    </div>
+
+    <div class="row">
+      <label for="text">Text to append</label>
+      <textarea id="text">External Morality Item Update</textarea>
+    </div>
+
+    <div class="row">
+      <label for="missingCols">If line has fewer columns…</label>
+      <select id="missingCols">
+        <option value="skip">Skip that line (no change)</option>
+        <option value="pad">Pad missing columns, then append</option>
+        <option value="error">Stop with an error</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button id="run" disabled>Process & Download</button>
+      <button id="previewBtn" disabled>Preview first 5 lines</button>
+      <button id="reset">Reset</button>
+    </div>
+
+    <div style="margin-top:14px;">
+      <div id="status" class="small"></div>
+      <div id="previewWrap" style="display:none; margin-top:10px;">
+        <div class="small" style="margin-bottom:6px;">Preview</div>
+        <pre id="preview"></pre>
+      </div>
+    </div>
+
+    <details style="margin-top:14px;">
+      <summary>Example</summary>
+      <pre>Input:
+tony|salls|17.10.1980|123 123 4567|12.12.2025|456123789
+
+Append to column 5:
+^^External Morality Item Update
+
+Output:
+tony|salls|17.10.1980|123 123 4567|12.12.2025^^External Morality Item Update|456123789</pre>
+    </details>
+  </div>
+
+  <script>
+    "use strict";
+
+    const $ = (id) => document.getElementById(id);
+
+    const fileEl = $("file");
+    const delimiterEl = $("delimiter");
+    const colEl = $("col");
+    const appendDelimEl = $("appendDelim");
+    const textEl = $("text");
+    const missingColsEl = $("missingCols");
+
+    const runBtn = $("run");
+    const previewBtn = $("previewBtn");
+    const resetBtn = $("reset");
+
+    const statusEl = $("status");
+    const previewWrap = $("previewWrap");
+    const previewEl = $("preview");
+
+    let loadedText = null;
+    let loadedName = null;
+
+    function setStatus(msg, cls) {
+      statusEl.className = "small " + (cls || "");
+      statusEl.textContent = msg || "";
+    }
+
+    function detectNewline(text) {
+      // Preserve original line endings for output
+      if (text.includes("\r\n")) return "\r\n";
+      if (text.includes("\r")) return "\r";
+      return "\n";
+    }
+
+    function normalizeDelimiter(raw) {
+      // Allow "\t" entry for tabs
+      if (raw === "\\t") return "\t";
+      return raw;
+    }
+
+    function validateInputs() {
+      if (!loadedText) return false;
+      const delim = normalizeDelimiter(delimiterEl.value);
+      const col = Number(colEl.value);
+      const appendText = textEl.value;
+
+      if (!delim || delim.length < 1) return false;
+      if (!Number.isInteger(col) || col < 1) return false;
+      if (appendText == null) return false;
+      return true;
+    }
+
+    function processFileContent(text) {
+      const newline = detectNewline(text);
+      const delim = normalizeDelimiter(delimiterEl.value);
+      const col1 = Number(colEl.value);
+      const appendDelim = appendDelimEl.value ?? "";
+      const appendText = textEl.value ?? "";
+      const behavior = missingColsEl.value;
+
+      // Split lines while preserving the possibility of a final trailing newline
+      const hasTrailingNewline = text.endsWith("\n") || text.endsWith("\r");
+      const lines = text.split(/\r\n|\n|\r/);
+
+      const targetIdx = col1 - 1;
+
+      let changed = 0;
+      let skipped = 0;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        // If the file ended with a trailing newline, split() gives a final empty line; keep as-is.
+        if (i === lines.length - 1 && line === "" && hasTrailingNewline) continue;
+
+        // Skip completely empty lines (optional; keep them unchanged)
+        if (line === "") continue;
+
+        const parts = line.split(delim);
+
+        if (parts.length <= targetIdx) {
+          if (behavior === "skip") {
+            skipped++;
+            continue;
+          }
+          if (behavior === "error") {
+            throw new Error(`Line ${i + 1} has only ${parts.length} column(s); cannot append to column ${col1}.`);
+          }
+          // pad
+          while (parts.length <= targetIdx) parts.push("");
+        }
+
+        parts[targetIdx] = parts[targetIdx] + appendDelim + appendText;
+        lines[i] = parts.join(delim);
+        changed++;
+      }
+
+      const out = lines.join(newline);
+      return { out, changed, skipped };
+    }
+
+    function downloadText(filename, text) {
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    async function onPickFile() {
+      const file = fileEl.files && fileEl.files[0];
+      loadedText = null;
+      loadedName = null;
+      previewWrap.style.display = "none";
+      previewEl.textContent = "";
+
+      if (!file) {
+        setStatus("Choose a file to begin.", "");
+        runBtn.disabled = true;
+        previewBtn.disabled = true;
+        return;
+      }
+
+      loadedName = file.name;
+
+      try {
+        loadedText = await file.text();
+        setStatus(`Loaded "${loadedName}" (${loadedText.length.toLocaleString()} characters).`, "ok");
+      } catch (e) {
+        setStatus(`Failed to read file: ${e && e.message ? e.message : String(e)}`, "err");
+        loadedText = null;
+      }
+
+      runBtn.disabled = !validateInputs();
+      previewBtn.disabled = !validateInputs();
+    }
+
+    function onInputsChanged() {
+      runBtn.disabled = !validateInputs();
+      previewBtn.disabled = !validateInputs();
+    }
+
+    function makeOutputName(inputName) {
+      // example: data.txt -> data.updated.txt ; no extension -> name.updated
+      const idx = inputName.lastIndexOf(".");
+      if (idx > 0) {
+        return inputName.slice(0, idx) + ".updated" + inputName.slice(idx);
+      }
+      return inputName + ".updated";
+    }
+
+    function doPreview() {
+      if (!validateInputs()) return;
+
+      try {
+        const { out } = processFileContent(loadedText);
+        const newline = detectNewline(out);
+        const lines = out.split(/\r\n|\n|\r/).slice(0, 5);
+        previewEl.textContent = lines.join(newline);
+        previewWrap.style.display = "block";
+        setStatus("Preview generated (first 5 lines).", "ok");
+      } catch (e) {
+        setStatus(`Preview failed: ${e && e.message ? e.message : String(e)}`, "err");
+        previewWrap.style.display = "none";
+      }
+    }
+
+    function doRun() {
+      if (!validateInputs()) return;
+
+      try {
+        const { out, changed, skipped } = processFileContent(loadedText);
+        const outName = makeOutputName(loadedName || "output.txt");
+        downloadText(outName, out);
+        const extra = skipped ? ` Skipped ${skipped} line(s) with too few columns.` : "";
+        setStatus(`Done. Updated ${changed} line(s). Downloaded "${outName}".${extra}`, "ok");
+      } catch (e) {
+        setStatus(`Processing failed: ${e && e.message ? e.message : String(e)}`, "err");
+      }
+    }
+
+    function doReset() {
+      fileEl.value = "";
+      loadedText = null;
+      loadedName = null;
+      delimiterEl.value = "|";
+      colEl.value = "5";
+      appendDelimEl.value = "^^";
+      textEl.value = "External Morality Item Update";
+      missingColsEl.value = "skip";
+      previewWrap.style.display = "none";
+      previewEl.textContent = "";
+      setStatus("Reset.", "");
+      runBtn.disabled = true;
+      previewBtn.disabled = true;
+    }
+
+    fileEl.addEventListener("change", onPickFile);
+    [delimiterEl, colEl, appendDelimEl, textEl, missingColsEl].forEach(el => {
+      el.addEventListener("input", onInputsChanged);
+      el.addEventListener("change", onInputsChanged);
+    });
+
+    runBtn.addEventListener("click", doRun);
+    previewBtn.addEventListener("click", doPreview);
+    resetBtn.addEventListener("click", doReset);
+
+    setStatus("Choose a file to begin.", "");
+  </script>
+</body>
+</html>
