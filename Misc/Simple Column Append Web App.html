@@ -3,91 +3,227 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Append Text to Column in Delimited File</title>
+  <title>Append Text to Column (Delimited File)</title>
   <style>
     :root { color-scheme: light dark; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; line-height: 1.35; }
-    h1 { margin: 0 0 12px; font-size: 20px; }
-    .card { max-width: 900px; padding: 16px; border: 1px solid rgba(127,127,127,.35); border-radius: 12px; }
-    .row { display: grid; grid-template-columns: 220px 1fr; gap: 10px 14px; align-items: center; margin: 10px 0; }
-    label { font-weight: 600; }
-    input[type="text"], input[type="number"], textarea, select {
-      width: 100%; padding: 10px; border-radius: 10px;
-      border: 1px solid rgba(127,127,127,.45);
-      background: transparent;
+
+    * { box-sizing: border-box; }
+
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      line-height: 1.35;
+      background: rgba(127,127,127,.06);
     }
-    textarea { min-height: 72px; resize: vertical; }
-    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
-    button {
-      padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(127,127,127,.45);
-      background: rgba(127,127,127,.12); cursor: pointer; font-weight: 650;
+
+    .wrap{
+      max-width: 980px;
+      margin: 28px auto;
+      padding: 0 16px;
     }
-    button:disabled { opacity: .5; cursor: not-allowed; }
-    .small { font-size: 12px; opacity: .8; }
-    pre { white-space: pre-wrap; word-break: break-word; background: rgba(127,127,127,.08); padding: 10px; border-radius: 10px; }
-    .ok { color: #1a7f37; }
-    .warn { color: #b08900; }
-    .err { color: #c83c3c; }
+
+    .card{
+      background: rgba(255,255,255,.85);
+      border: 1px solid rgba(127,127,127,.25);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.06);
+      overflow: hidden; /* helps with any accidental overflow */
+      backdrop-filter: blur(6px);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .card{
+        background: rgba(20,20,20,.6);
+        box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      }
+    }
+
+    h1{
+      margin: 0 0 14px;
+      font-size: 18px;
+      letter-spacing: .2px;
+    }
+
+    .grid{
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 12px 14px;
+      align-items: center;
+    }
+
+    @media (max-width: 720px){
+      .grid{ grid-template-columns: 1fr; }
+      label{ margin-top: 6px; }
+    }
+
+    label{
+      font-weight: 650;
+      opacity: .92;
+    }
+
+    input[type="text"], input[type="number"], textarea, select{
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(127,127,127,.35);
+      background: rgba(127,127,127,.06);
+      color: inherit;
+      outline: none;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus, textarea:focus, select:focus{
+      border-color: rgba(60,132,244,.7);
+      box-shadow: 0 0 0 4px rgba(60,132,244,.15);
+      background: rgba(127,127,127,.08);
+    }
+
+    textarea{ min-height: 86px; resize: vertical; }
+
+    .fileRow{
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .fileMeta{
+      font-size: 12px;
+      opacity: .8;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .actions{
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    button{
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(127,127,127,.35);
+      background: rgba(127,127,127,.10);
+      color: inherit;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button:hover{ background: rgba(127,127,127,.16); }
+    button:disabled{ opacity: .5; cursor: not-allowed; }
+
+    .primary{
+      background: rgba(60,132,244,.18);
+      border-color: rgba(60,132,244,.45);
+    }
+    .primary:hover{ background: rgba(60,132,244,.24); }
+
+    .status{
+      margin-top: 12px;
+      font-size: 12px;
+      opacity: .85;
+      min-height: 16px;
+    }
+    .ok{ color: #1a7f37; opacity: 1; }
+    .warn{ color: #b08900; opacity: 1; }
+    .err{ color: #c83c3c; opacity: 1; }
+
+    .previewCard{
+      margin-top: 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(127,127,127,.25);
+      background: rgba(127,127,127,.06);
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    .previewHeader{
+      display:flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .previewTitle{
+      font-size: 12px;
+      font-weight: 750;
+      opacity: .85;
+    }
+
+    .previewHint{
+      font-size: 12px;
+      opacity: .7;
+    }
+
+    pre{
+      margin: 0;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(0,0,0,.06);
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 12px;
+      overflow: auto;
+      max-width: 100%;
+    }
+
+    details{ margin-top: 14px; }
+    summary{ cursor: pointer; font-weight: 650; opacity: .9; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Append text to a column in a delimited file</h1>
-    <div class="small">
-      Works entirely in your browser. No uploads, no dependencies.
-    </div>
+  <div class="wrap">
+    <div class="card">
+      <h1>Append text to a column in a delimited file</h1>
 
-    <div class="row" style="margin-top:14px;">
-      <label for="file">Input file</label>
-      <input id="file" type="file" />
-    </div>
+      <div class="grid">
+        <label for="file">Input file</label>
+        <div class="fileRow">
+          <input id="file" type="file" />
+          <span id="fileMeta" class="fileMeta"></span>
+        </div>
 
-    <div class="row">
-      <label for="delimiter">Field delimiter</label>
-      <input id="delimiter" type="text" value="|" maxlength="10" />
-    </div>
+        <label for="delimiter">Field delimiter</label>
+        <input id="delimiter" type="text" value="|" maxlength="10" />
 
-    <div class="row">
-      <label for="col">Column (1-based)</label>
-      <input id="col" type="number" min="1" value="5" />
-    </div>
+        <label for="col">Column (1-based)</label>
+        <input id="col" type="number" min="1" value="5" />
 
-    <div class="row">
-      <label for="appendDelim">Append delimiter</label>
-      <input id="appendDelim" type="text" value="^^" maxlength="20" />
-    </div>
+        <label for="text">Text to append</label>
+        <textarea id="text">^^External Morality Item Update</textarea>
 
-    <div class="row">
-      <label for="text">Text to append</label>
-      <textarea id="text">External Morality Item Update</textarea>
-    </div>
+        <label for="missingCols">If line has fewer columns…</label>
+        <select id="missingCols">
+          <option value="skip">Skip that line (no change)</option>
+          <option value="pad">Pad missing columns, then append</option>
+          <option value="error">Stop with an error</option>
+        </select>
+      </div>
 
-    <div class="row">
-      <label for="missingCols">If line has fewer columns…</label>
-      <select id="missingCols">
-        <option value="skip">Skip that line (no change)</option>
-        <option value="pad">Pad missing columns, then append</option>
-        <option value="error">Stop with an error</option>
-      </select>
-    </div>
+      <div class="actions">
+        <button id="run" class="primary" disabled>Process & Download</button>
+        <button id="reset">Reset</button>
+      </div>
 
-    <div class="actions">
-      <button id="run" disabled>Process & Download</button>
-      <button id="previewBtn" disabled>Preview first 5 lines</button>
-      <button id="reset">Reset</button>
-    </div>
+      <div id="status" class="status"></div>
 
-    <div style="margin-top:14px;">
-      <div id="status" class="small"></div>
-      <div id="previewWrap" style="display:none; margin-top:10px;">
-        <div class="small" style="margin-bottom:6px;">Preview</div>
+      <div id="previewWrap" class="previewCard" style="display:none;">
+        <div class="previewHeader">
+          <div class="previewTitle">Live preview (first 5 lines)</div>
+          <div class="previewHint">Updates as you change options</div>
+        </div>
         <pre id="preview"></pre>
       </div>
-    </div>
 
-    <details style="margin-top:14px;">
-      <summary>Example</summary>
-      <pre>Input:
+      <details>
+        <summary>Example</summary>
+        <pre>Input:
 tony|salls|17.10.1980|123 123 4567|12.12.2025|456123789
 
 Append to column 5:
@@ -95,7 +231,8 @@ Append to column 5:
 
 Output:
 tony|salls|17.10.1980|123 123 4567|12.12.2025^^External Morality Item Update|456123789</pre>
-    </details>
+      </details>
+    </div>
   </div>
 
   <script>
@@ -104,37 +241,41 @@ tony|salls|17.10.1980|123 123 4567|12.12.2025^^External Morality Item Update|456
     const $ = (id) => document.getElementById(id);
 
     const fileEl = $("file");
+    const fileMetaEl = $("fileMeta");
     const delimiterEl = $("delimiter");
     const colEl = $("col");
-    const appendDelimEl = $("appendDelim");
     const textEl = $("text");
     const missingColsEl = $("missingCols");
 
     const runBtn = $("run");
-    const previewBtn = $("previewBtn");
     const resetBtn = $("reset");
 
     const statusEl = $("status");
     const previewWrap = $("previewWrap");
     const previewEl = $("preview");
 
+    // Full file for download processing
     let loadedText = null;
     let loadedName = null;
 
+    // Cached preview lines
+    let previewLines = [];
+    let originalNewline = "\n";
+    let hadTrailingNewline = false;
+
     function setStatus(msg, cls) {
-      statusEl.className = "small " + (cls || "");
+      statusEl.className = "status " + (cls || "");
       statusEl.textContent = msg || "";
     }
 
     function detectNewline(text) {
-      // Preserve original line endings for output
       if (text.includes("\r\n")) return "\r\n";
       if (text.includes("\r")) return "\r";
       return "\n";
     }
 
     function normalizeDelimiter(raw) {
-      // Allow "\t" entry for tabs
+      // Allow typing \t for tab
       if (raw === "\\t") return "\t";
       return raw;
     }
@@ -143,38 +284,38 @@ tony|salls|17.10.1980|123 123 4567|12.12.2025^^External Morality Item Update|456
       if (!loadedText) return false;
       const delim = normalizeDelimiter(delimiterEl.value);
       const col = Number(colEl.value);
-      const appendText = textEl.value;
-
-      if (!delim || delim.length < 1) return false;
+      if (!delim) return false;
       if (!Number.isInteger(col) || col < 1) return false;
-      if (appendText == null) return false;
       return true;
     }
 
-    function processFileContent(text) {
+    function splitLinesPreserveInfo(text) {
       const newline = detectNewline(text);
+      const trailing = text.endsWith("\n") || text.endsWith("\r");
+      const lines = text.split(/\r\n|\n|\r/);
+      return { lines, newline, trailing };
+    }
+
+    function processLines(lines, newline, trailingNewline, forPreview) {
       const delim = normalizeDelimiter(delimiterEl.value);
       const col1 = Number(colEl.value);
-      const appendDelim = appendDelimEl.value ?? "";
       const appendText = textEl.value ?? "";
       const behavior = missingColsEl.value;
-
-      // Split lines while preserving the possibility of a final trailing newline
-      const hasTrailingNewline = text.endsWith("\n") || text.endsWith("\r");
-      const lines = text.split(/\r\n|\n|\r/);
 
       const targetIdx = col1 - 1;
 
       let changed = 0;
       let skipped = 0;
 
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
+      const outLines = lines.slice(); // copy
 
-        // If the file ended with a trailing newline, split() gives a final empty line; keep as-is.
-        if (i === lines.length - 1 && line === "" && hasTrailingNewline) continue;
+      for (let i = 0; i < outLines.length; i++) {
+        const line = outLines[i];
 
-        // Skip completely empty lines (optional; keep them unchanged)
+        // Keep the last empty line if it comes from a trailing newline
+        if (i === outLines.length - 1 && line === "" && trailingNewline) continue;
+
+        // Keep empty lines unchanged
         if (line === "") continue;
 
         const parts = line.split(delim);
@@ -185,19 +326,56 @@ tony|salls|17.10.1980|123 123 4567|12.12.2025^^External Morality Item Update|456
             continue;
           }
           if (behavior === "error") {
+            // For preview, show error without throwing the whole app into a stack trace
             throw new Error(`Line ${i + 1} has only ${parts.length} column(s); cannot append to column ${col1}.`);
           }
           // pad
           while (parts.length <= targetIdx) parts.push("");
         }
 
-        parts[targetIdx] = parts[targetIdx] + appendDelim + appendText;
-        lines[i] = parts.join(delim);
+        parts[targetIdx] = parts[targetIdx] + appendText;
+        outLines[i] = parts.join(delim);
         changed++;
       }
 
-      const out = lines.join(newline);
-      return { out, changed, skipped };
+      // For preview, we never need to re-add trailing newline; it just displays lines.
+      const outText = outLines.join(newline);
+
+      return { outText, changed, skipped };
+    }
+
+    function updatePreview() {
+      if (!loadedText) {
+        previewWrap.style.display = "none";
+        previewEl.textContent = "";
+        return;
+      }
+
+      // Show preview only if we have cached lines
+      if (!previewLines.length) {
+        previewWrap.style.display = "none";
+        previewEl.textContent = "";
+        return;
+      }
+
+      try {
+        // Process only cached lines
+        const { outText } = processLines(previewLines, originalNewline, false, true);
+        // Only show first 5 non-null lines (cached already), keep as-is
+        previewEl.textContent = outText;
+        previewWrap.style.display = "block";
+        setStatus("Ready.", "ok");
+      } catch (e) {
+        previewWrap.style.display = "block";
+        previewEl.textContent = "(preview error)\n" + (e && e.message ? e.message : String(e));
+        setStatus("Fix the settings to resolve the preview error.", "err");
+      }
+    }
+
+    function makeOutputName(inputName) {
+      const idx = inputName.lastIndexOf(".");
+      if (idx > 0) return inputName.slice(0, idx) + ".updated" + inputName.slice(idx);
+      return inputName + ".updated";
     }
 
     function downloadText(filename, text) {
@@ -214,15 +392,17 @@ tony|salls|17.10.1980|123 123 4567|12.12.2025^^External Morality Item Update|456
 
     async function onPickFile() {
       const file = fileEl.files && fileEl.files[0];
+
       loadedText = null;
       loadedName = null;
+      previewLines = [];
       previewWrap.style.display = "none";
       previewEl.textContent = "";
+      fileMetaEl.textContent = "";
 
       if (!file) {
         setStatus("Choose a file to begin.", "");
         runBtn.disabled = true;
-        previewBtn.disabled = true;
         return;
       }
 
@@ -230,53 +410,40 @@ tony|salls|17.10.1980|123 123 4567|12.12.2025^^External Morality Item Update|456
 
       try {
         loadedText = await file.text();
-        setStatus(`Loaded "${loadedName}" (${loadedText.length.toLocaleString()} characters).`, "ok");
+        const { lines, newline, trailing } = splitLinesPreserveInfo(loadedText);
+        originalNewline = newline;
+        hadTrailingNewline = trailing;
+
+        // Cache first 5 lines (including empty lines if they appear early)
+        previewLines = lines.slice(0, 5);
+
+        fileMetaEl.textContent = `${loadedName} • ${file.size.toLocaleString()} bytes`;
+        setStatus("Loaded. Adjust options to see the live preview.", "ok");
       } catch (e) {
         setStatus(`Failed to read file: ${e && e.message ? e.message : String(e)}`, "err");
         loadedText = null;
       }
 
       runBtn.disabled = !validateInputs();
-      previewBtn.disabled = !validateInputs();
+      updatePreview();
     }
 
     function onInputsChanged() {
       runBtn.disabled = !validateInputs();
-      previewBtn.disabled = !validateInputs();
-    }
-
-    function makeOutputName(inputName) {
-      // example: data.txt -> data.updated.txt ; no extension -> name.updated
-      const idx = inputName.lastIndexOf(".");
-      if (idx > 0) {
-        return inputName.slice(0, idx) + ".updated" + inputName.slice(idx);
-      }
-      return inputName + ".updated";
-    }
-
-    function doPreview() {
-      if (!validateInputs()) return;
-
-      try {
-        const { out } = processFileContent(loadedText);
-        const newline = detectNewline(out);
-        const lines = out.split(/\r\n|\n|\r/).slice(0, 5);
-        previewEl.textContent = lines.join(newline);
-        previewWrap.style.display = "block";
-        setStatus("Preview generated (first 5 lines).", "ok");
-      } catch (e) {
-        setStatus(`Preview failed: ${e && e.message ? e.message : String(e)}`, "err");
-        previewWrap.style.display = "none";
-      }
+      if (validateInputs()) updatePreview();
+      else setStatus("Choose a file and check your settings.", "warn");
     }
 
     function doRun() {
       if (!validateInputs()) return;
 
       try {
-        const { out, changed, skipped } = processFileContent(loadedText);
+        const { lines, newline, trailing } = splitLinesPreserveInfo(loadedText);
+        const { outText, changed, skipped } = processLines(lines, newline, trailing, false);
+
         const outName = makeOutputName(loadedName || "output.txt");
-        downloadText(outName, out);
+        downloadText(outName, outText);
+
         const extra = skipped ? ` Skipped ${skipped} line(s) with too few columns.` : "";
         setStatus(`Done. Updated ${changed} line(s). Downloaded "${outName}".${extra}`, "ok");
       } catch (e) {
@@ -288,26 +455,30 @@ tony|salls|17.10.1980|123 123 4567|12.12.2025^^External Morality Item Update|456
       fileEl.value = "";
       loadedText = null;
       loadedName = null;
+      previewLines = [];
+      originalNewline = "\n";
+      hadTrailingNewline = false;
+
       delimiterEl.value = "|";
       colEl.value = "5";
-      appendDelimEl.value = "^^";
-      textEl.value = "External Morality Item Update";
+      textEl.value = "^^External Morality Item Update";
       missingColsEl.value = "skip";
+
       previewWrap.style.display = "none";
       previewEl.textContent = "";
+      fileMetaEl.textContent = "";
+
       setStatus("Reset.", "");
       runBtn.disabled = true;
-      previewBtn.disabled = true;
     }
 
     fileEl.addEventListener("change", onPickFile);
-    [delimiterEl, colEl, appendDelimEl, textEl, missingColsEl].forEach(el => {
+    [delimiterEl, colEl, textEl, missingColsEl].forEach(el => {
       el.addEventListener("input", onInputsChanged);
       el.addEventListener("change", onInputsChanged);
     });
 
     runBtn.addEventListener("click", doRun);
-    previewBtn.addEventListener("click", doPreview);
     resetBtn.addEventListener("click", doReset);
 
     setStatus("Choose a file to begin.", "");
