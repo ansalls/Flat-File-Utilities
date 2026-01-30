@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic Ideas Resubmission</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(59, 130, 246, 0.1) 0%, transparent 40%),
+                linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background-attachment: fixed;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 2px, transparent 2px),
+                radial-gradient(circle at 75% 75%, rgba(255,255,255,0.08) 1px, transparent 1px);
+            background-size: 60px 60px, 40px 40px;
+            pointer-events: none;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+            max-width: 500px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+        
+        h1 {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 28px;
+            font-size: 14px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4a4a6a;
+        }
+        
+        input {
+            width: 100%;
+            padding: 14px 18px;
+            font-size: 16px;
+            border: 2px solid #e0e0f0;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            background: #fafaff;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 0 4px rgba(118, 75, 162, 0.15);
+            background: white;
+        }
+        
+        .hint {
+            font-size: 12px;
+            color: #888;
+            margin-top: 10px;
+        }
+        
+        .button-container {
+            margin-top: 28px;
+        }
+        
+        .resubmit-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .resubmit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        }
+        
+        .resubmit-btn.disabled {
+            background: linear-gradient(135deg, #ccc 0%, #aaa 100%);
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+        }
+        
+        .parsed-number {
+            margin-top: 18px;
+            padding: 14px 16px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-radius: 10px;
+            color: #5a4a8a;
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+            border: 1px solid rgba(118, 75, 162, 0.2);
+        }
+        
+        .parsed-number.show {
+            display: block;
+        }
+        
+        .error {
+            margin-top: 18px;
+            padding: 14px 16px;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+            border-radius: 10px;
+            color: #b91c1c;
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+            border: 1px solid rgba(220, 38, 38, 0.2);
+        }
+        
+        .error.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Epic Ideas Resubmit</h1>
+        <p class="subtitle">Enter an Idea number or Idea URL to create a resubmission link</p>
+        
+        <label for="ideaInput">Idea Number or Idea URL</label>
+        <input 
+            type="text" 
+            id="ideaInput" 
+            placeholder="#92121"
+            autocomplete="off"
+        >
+        <p class="hint">Accepts a number like "92121", "#92121", or a full Idea URL from ideas.epic.com</p>
+        
+        <div class="parsed-number" id="parsedNumber"></div>
+        <div class="error" id="errorMsg"></div>
+        
+        <div class="button-container">
+            <a href="#" class="resubmit-btn disabled" id="resubmitBtn">Resubmit</a>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('ideaInput');
+        const btn = document.getElementById('resubmitBtn');
+        const parsedDisplay = document.getElementById('parsedNumber');
+        const errorDisplay = document.getElementById('errorMsg');
+
+        function parseIdeaNumber(value) {
+            const trimmed = value.trim();
+            
+            if (!trimmed) {
+                return null;
+            }
+            
+            // Check if it's just a number (with optional # prefix)
+            if (/^#?\d+$/.test(trimmed)) {
+                return trimmed.replace('#', '');
+            }
+            
+            // Try to parse as URL from ideas.epic.com
+            // Pattern: https://ideas.epic.com/{anything}/Idea/#12345
+            const urlPattern = /^https?:\/\/ideas\.epic\.com\/[^\/]+\/Idea\/#?(\d+)/i;
+            const match = trimmed.match(urlPattern);
+            
+            if (match) {
+                return match[1];
+            }
+            
+            // Also try without the hash in case URL format varies
+            const altPattern = /^https?:\/\/ideas\.epic\.com\/[^\/]+\/Idea\/(\d+)/i;
+            const altMatch = trimmed.match(altPattern);
+            
+            if (altMatch) {
+                return altMatch[1];
+            }
+            
+            return null;
+        }
+
+        function updateUI() {
+            const ideaNumber = parseIdeaNumber(input.value);
+            
+            if (ideaNumber) {
+                btn.classList.remove('disabled');
+                btn.href = `https://ideas.epic.com/Add?CopyIdea=${ideaNumber}`;
+                parsedDisplay.textContent = `✓ Parsed Idea number: ${ideaNumber}`;
+                parsedDisplay.classList.add('show');
+                errorDisplay.classList.remove('show');
+            } else {
+                btn.classList.add('disabled');
+                btn.href = '#';
+                parsedDisplay.classList.remove('show');
+                
+                if (input.value.trim()) {
+                    errorDisplay.textContent = '✗ Could not parse a valid Idea number';
+                    errorDisplay.classList.add('show');
+                } else {
+                    errorDisplay.classList.remove('show');
+                }
+            }
+        }
+
+        input.addEventListener('input', updateUI);
+        
+        // Handle click on disabled button
+        btn.addEventListener('click', function(e) {
+            if (btn.classList.contains('disabled')) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>
